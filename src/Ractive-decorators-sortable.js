@@ -51,7 +51,12 @@
 
 	You can configure the class name like so:
 
-	    Ractive.decorators.sortable.targetClass = 'aDifferentClassName';
+	    <!-- template -->
+	    <ul>
+	      {{#list}}
+	        <li as-sortable="null, 'aDifferentClassName'">{{.}}</li>
+	      {{/list}}
+	    </ul>
 
 	PS for an entertaining rant about the drag and drop API, visit
 	http://www.quirksmode.org/blog/archives/2009/09/the_html5_drag.html
@@ -99,7 +104,7 @@ var sortableDecorator = (function (global, factory) {
                 .nodeToMove;
         };
 
-    sortable = function (node, draggableElSelector) {
+    sortable = function (node, draggableElSelector, targetClass) {
         var nodeToMove, draggableNode;
 
         if (draggableElSelector != null) {
@@ -114,6 +119,8 @@ var sortableDecorator = (function (global, factory) {
             nodeToMove: nodeToMove,
             draggableNode: draggableNode
         });
+
+        nodeToMove.dataset.targetClass = targetClass || 'droptarget';
 
         node = draggableNode;
         node.draggable = true;
@@ -136,8 +143,6 @@ var sortableDecorator = (function (global, factory) {
             }
         };
     };
-
-    sortable.targetClass = 'droptarget';
 
     errorMessage = 'The sortable decorator only works with elements that correspond to array members';
 
@@ -179,7 +184,7 @@ var sortableDecorator = (function (global, factory) {
 
         // if it's the same index, add droptarget class then abort
         if (targetKeypath === sourceKeypath) {
-            me.classList.add(sortable.targetClass);
+            me.classList.add(me.dataset.targetClass);
             return;
         }
 
@@ -201,7 +206,7 @@ var sortableDecorator = (function (global, factory) {
     removeTargetClass = function () {
         var node = getNodeToMove(this);
 
-        node.classList.remove(sortable.targetClass);
+        node.classList.remove(node.dataset.targetClass);
     };
 
     preventDefault = function (event) { event.preventDefault(); };
