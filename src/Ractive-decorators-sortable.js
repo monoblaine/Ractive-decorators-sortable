@@ -34,7 +34,7 @@
 	    <!-- template -->
 	    <ul>
 	      {{#list}}
-	        <li decorator='sortable'>{{.}}</li>
+	        <li as-sortable>{{.}}</li>
 	      {{/list}}
 	    </ul>
 
