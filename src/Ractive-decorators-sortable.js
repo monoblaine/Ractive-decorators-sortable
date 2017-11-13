@@ -161,11 +161,15 @@ var sortableDecorator = (function (global, factory) {
 
         // keep a reference to the Ractive instance that 'owns' this data and this element
         ractive = context.ractive;
+
+        event.stopPropagation();
     };
 
-    dragenterHandler = function () {
+    dragenterHandler = function (event) {
         var me = getNodeToMove(this),
             targetKeypath, targetArray, array, source, context;
+
+        event.preventDefault();
 
         context = Ractive.getContext(me);
 
@@ -203,13 +207,17 @@ var sortableDecorator = (function (global, factory) {
         ractive.splice(targetArray, array[array.length - 1], 0, source);
     };
 
-    removeTargetClass = function () {
+    removeTargetClass = function (event) {
         var node = getNodeToMove(this);
 
         node.classList.remove(node.dataset.targetClass);
+        event.stopPropagation();
     };
 
-    preventDefault = function (event) { event.preventDefault(); };
+    preventDefault = function (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    };
 
     Ractive.decorators.sortable = sortable;
 
