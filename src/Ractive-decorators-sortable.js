@@ -192,6 +192,8 @@ var sortableDecorator = (function (global, factory) {
             return;
         }
 
+        event.dataTransfer.dropEffect = "move";
+
         // remove source from array
         source = ractive.get(sourceKeypath);
         array = Ractive.splitKeypath(sourceKeypath);
