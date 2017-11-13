@@ -91,9 +91,31 @@ var sortableDecorator = (function (global, factory) {
         dragenterHandler,
         removeTargetClass,
         preventDefault,
-        errorMessage;
+        errorMessage,
+        nodeMapping = [],
+        getNodeToMove = function (draggableNode) {
+            return nodeMapping
+                .find(function (item) { return item.draggableNode === draggableNode; })
+                .nodeToMove;
+        };
 
-    sortable = function (node) {
+    sortable = function (node, draggableElSelector) {
+        var nodeToMove, draggableNode;
+
+        if (draggableElSelector != null) {
+            nodeToMove = node;
+            draggableNode = node.querySelector(draggableElSelector);
+        }
+        else {
+            nodeToMove = draggableNode = node;
+        }
+
+        nodeMapping.push({
+            nodeToMove: nodeToMove,
+            draggableNode: draggableNode
+        });
+
+        node = draggableNode;
         node.draggable = true;
 
         node.addEventListener('dragstart', dragstartHandler, false);
@@ -120,7 +142,8 @@ var sortableDecorator = (function (global, factory) {
     errorMessage = 'The sortable decorator only works with elements that correspond to array members';
 
     dragstartHandler = function (event) {
-        var context = Ractive.getContext(this);
+        var me = getNodeToMove(this),
+            context = Ractive.getContext(me);
 
         sourceKeypath = context.resolve();
         sourceArray = context.resolve('../');
@@ -136,9 +159,10 @@ var sortableDecorator = (function (global, factory) {
     };
 
     dragenterHandler = function () {
-        var targetKeypath, targetArray, array, source, context;
+        var me = getNodeToMove(this),
+            targetKeypath, targetArray, array, source, context;
 
-        context = Ractive.getContext(this);
+        context = Ractive.getContext(me);
 
         // If we strayed into someone else's territory, abort
         if (context.ractive !== ractive) {
@@ -155,7 +179,7 @@ var sortableDecorator = (function (global, factory) {
 
         // if it's the same index, add droptarget class then abort
         if (targetKeypath === sourceKeypath) {
-            this.classList.add(sortable.targetClass);
+            me.classList.add(sortable.targetClass);
             return;
         }
 
@@ -175,7 +199,9 @@ var sortableDecorator = (function (global, factory) {
     };
 
     removeTargetClass = function () {
-        this.classList.remove(sortable.targetClass);
+        var node = getNodeToMove(this);
+
+        node.classList.remove(sortable.targetClass);
     };
 
     preventDefault = function (event) { event.preventDefault(); };
