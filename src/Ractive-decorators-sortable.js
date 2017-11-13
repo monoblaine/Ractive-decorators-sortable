@@ -98,20 +98,19 @@ var sortableDecorator = (function (global, factory) {
 
         node.addEventListener('dragstart', dragstartHandler, false);
         node.addEventListener('dragenter', dragenterHandler, false);
-        node.addEventListener('dragleave', removeTargetClass, false);
-        node.addEventListener('drop', removeTargetClass, false);
-
         // necessary to prevent animation where ghost element returns
         // to its (old) home
         node.addEventListener('dragover', preventDefault, false);
+        node.addEventListener('dragleave', removeTargetClass, false);
+        node.addEventListener('drop', removeTargetClass, false);
 
         return {
             teardown: function () {
                 node.removeEventListener('dragstart', dragstartHandler, false);
                 node.removeEventListener('dragenter', dragenterHandler, false);
+                node.removeEventListener('dragover', preventDefault, false);
                 node.removeEventListener('dragleave', removeTargetClass, false);
                 node.removeEventListener('drop', removeTargetClass, false);
-                node.removeEventListener('dragover', preventDefault, false);
             }
         };
     };
