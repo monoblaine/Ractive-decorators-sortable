@@ -58,137 +58,135 @@
 
 */
 
-var sortableDecorator = (function ( global, factory ) {
+var sortableDecorator = (function (global, factory) {
+    'use strict';
 
-	'use strict';
+    // Common JS (i.e. browserify) environment
+    if (typeof module !== 'undefined' && module.exports && typeof require === 'function') {
+        factory(require('Ractive'));
+    }
 
-	// Common JS (i.e. browserify) environment
-	if ( typeof module !== 'undefined' && module.exports && typeof require === 'function' ) {
-		factory( require( 'Ractive' ) );
-	}
+    // AMD?
+    else if (typeof define === 'function' && define.amd) {
+        define(['Ractive'], factory);
+    }
 
-	// AMD?
-	else if ( typeof define === 'function' && define.amd ) {
-		define([ 'Ractive' ], factory );
-	}
+    // browser global
+    else if (global.Ractive) {
+        factory(global.Ractive);
+    }
 
-	// browser global
-	else if ( global.Ractive ) {
-		factory( global.Ractive );
-	}
+    else {
+        throw new Error('Could not find Ractive! It must be loaded before the Ractive-decorators-sortable plugin');
+    }
 
-	else {
-		throw new Error( 'Could not find Ractive! It must be loaded before the Ractive-decorators-sortable plugin' );
-	}
+}(typeof window !== 'undefined' ? window : this, function (Ractive) {
+    'use strict';
 
-}( typeof window !== 'undefined' ? window : this, function ( Ractive ) {
+    var sortable,
+        ractive,
+        sourceKeypath,
+        sourceArray,
+        dragstartHandler,
+        dragenterHandler,
+        removeTargetClass,
+        preventDefault,
+        errorMessage;
 
-	'use strict';
+    sortable = function (node) {
+        node.draggable = true;
 
-	var sortable,
-		ractive,
-		sourceKeypath,
-		sourceArray,
-		dragstartHandler,
-		dragenterHandler,
-		removeTargetClass,
-		preventDefault,
-		errorMessage;
+        node.addEventListener('dragstart', dragstartHandler, false);
+        node.addEventListener('dragenter', dragenterHandler, false);
+        node.addEventListener('dragleave', removeTargetClass, false);
+        node.addEventListener('drop', removeTargetClass, false);
 
-	sortable = function ( node ) {
-		node.draggable = true;
+        // necessary to prevent animation where ghost element returns
+        // to its (old) home
+        node.addEventListener('dragover', preventDefault, false);
 
-		node.addEventListener( 'dragstart', dragstartHandler, false );
-		node.addEventListener( 'dragenter', dragenterHandler, false );
-		node.addEventListener( 'dragleave', removeTargetClass, false );
-		node.addEventListener( 'drop', removeTargetClass, false );
+        return {
+            teardown: function () {
+                node.removeEventListener('dragstart', dragstartHandler, false);
+                node.removeEventListener('dragenter', dragenterHandler, false);
+                node.removeEventListener('dragleave', removeTargetClass, false);
+                node.removeEventListener('drop', removeTargetClass, false);
+                node.removeEventListener('dragover', preventDefault, false);
+            }
+        };
+    };
 
-		// necessary to prevent animation where ghost element returns
-		// to its (old) home
-		node.addEventListener( 'dragover', preventDefault, false );
+    sortable.targetClass = 'droptarget';
 
-		return {
-			teardown: function () {
-				node.removeEventListener( 'dragstart', dragstartHandler, false );
-				node.removeEventListener( 'dragenter', dragenterHandler, false );
-				node.removeEventListener( 'dragleave', removeTargetClass, false );
-				node.removeEventListener( 'drop', removeTargetClass, false );
-				node.removeEventListener( 'dragover', preventDefault, false );
-			}
-		};
-	};
+    errorMessage = 'The sortable decorator only works with elements that correspond to array members';
 
-	sortable.targetClass = 'droptarget';
+    dragstartHandler = function (event) {
+        var context = Ractive.getContext(this);
 
-	errorMessage = 'The sortable decorator only works with elements that correspond to array members';
+        sourceKeypath = context.resolve();
+        sourceArray = context.resolve('../');
 
-	dragstartHandler = function ( event ) {
-		var context = Ractive.getContext(this);
+        if (!Array.isArray(context.get('../'))) {
+            throw new Error(errorMessage);
+        }
 
-		sourceKeypath = context.resolve();
-		sourceArray = context.resolve('../');
+        event.dataTransfer.setData('foo', true); // enables dragging in FF. go figure
 
-		if ( !Array.isArray(context.get('../')) ) {
-			throw new Error( errorMessage );
-		}
+        // keep a reference to the Ractive instance that 'owns' this data and this element
+        ractive = context.ractive;
+    };
 
-		event.dataTransfer.setData( 'foo', true ); // enables dragging in FF. go figure
+    dragenterHandler = function () {
+        var targetKeypath, targetArray, array, source, context;
 
-		// keep a reference to the Ractive instance that 'owns' this data and this element
-		ractive = context.ractive;
-	};
+        context = Ractive.getContext(this);
 
-	dragenterHandler = function () {
-		var targetKeypath, targetArray, array, source, context;
+        // If we strayed into someone else's territory, abort
+        if (context.ractive !== ractive) {
+            return;
+        }
 
-		context = Ractive.getContext(this);
+        targetKeypath = context.resolve();
+        targetArray = context.resolve('../');
 
-		// If we strayed into someone else's territory, abort
-		if ( context.ractive !== ractive ) {
-			return;
-		}
+        // if we're dealing with a different array, abort
+        if (targetArray !== sourceArray) {
+            return;
+        }
 
-		targetKeypath = context.resolve();
-		targetArray = context.resolve('../');
+        // if it's the same index, add droptarget class then abort
+        if (targetKeypath === sourceKeypath) {
+            this.classList.add(sortable.targetClass);
+            return;
+        }
 
-		// if we're dealing with a different array, abort
-		if ( targetArray !== sourceArray ) {
-			return;
-		}
+        // remove source from array
+        source = ractive.get(sourceKeypath);
+        array = Ractive.splitKeypath(sourceKeypath);
 
-		// if it's the same index, add droptarget class then abort
-		if ( targetKeypath === sourceKeypath ) {
-			this.classList.add( sortable.targetClass );
-			return;
-		}
+        ractive.splice(targetArray, array[array.length - 1], 1);
 
-		// remove source from array
-		source = ractive.get(sourceKeypath);
-		array = Ractive.splitKeypath(sourceKeypath);
+        // the target index is now the source index...
+        sourceKeypath = targetKeypath;
 
-		ractive.splice( targetArray, array[ array.length - 1 ], 1 );
+        array = Ractive.splitKeypath(sourceKeypath);
 
-		// the target index is now the source index...
-		sourceKeypath = targetKeypath;
+        // add source back to array in new location
+        ractive.splice(targetArray, array[array.length - 1], 0, source);
+    };
 
-		array = Ractive.splitKeypath(sourceKeypath);
+    removeTargetClass = function () {
+        this.classList.remove(sortable.targetClass);
+    };
 
-		// add source back to array in new location
-		ractive.splice( targetArray, array[ array.length - 1 ], 0, source );
-	};
+    preventDefault = function (event) { event.preventDefault(); };
 
-	removeTargetClass = function () {
-		this.classList.remove( sortable.targetClass );
-	};
+    Ractive.decorators.sortable = sortable;
 
-	preventDefault = function ( event ) { event.preventDefault(); };
-
-	Ractive.decorators.sortable = sortable;
-
-	return sortable;
+    return sortable;
 }));
 
 // Common JS (i.e. browserify) environment
-if ( typeof module !== 'undefined' && module.exports) {
-	module.exports = sortableDecorator;
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = sortableDecorator;
 }
