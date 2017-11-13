@@ -102,9 +102,10 @@ var sortableDecorator = (function (global, factory) {
             return nodeMapping
                 .find(function (item) { return item.draggableNode === draggableNode; })
                 .nodeToMove;
-        };
+        },
+        eventNameToFire;
 
-    sortable = function (node, draggableElSelector, targetClass) {
+    sortable = function (node, draggableElSelector, targetClass, _eventNameToFire) {
         var nodeToMove, draggableNode;
 
         if (draggableElSelector != null) {
@@ -121,6 +122,7 @@ var sortableDecorator = (function (global, factory) {
         });
 
         nodeToMove.dataset.targetClass = targetClass || 'droptarget';
+        eventNameToFire = _eventNameToFire;
 
         node = draggableNode;
         node.draggable = true;
@@ -207,6 +209,10 @@ var sortableDecorator = (function (global, factory) {
 
         // add source back to array in new location
         ractive.splice(targetArray, array[array.length - 1], 0, source);
+
+        if (eventNameToFire != null) {
+            ractive.fire(eventNameToFire, context, array);
+        }
     };
 
     removeTargetClass = function (event) {
