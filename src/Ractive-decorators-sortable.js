@@ -108,7 +108,7 @@ var sortableDecorator = (function (global, factory) {
     sortable = function (node, draggableElSelector, targetClass, _eventNameToFire) {
         var nodeToMove, draggableNode;
 
-        if (draggableElSelector != null) {
+        if (draggableElSelector != null) { // jshint ignore:line
             nodeToMove = node;
             draggableNode = node.querySelector(draggableElSelector);
         }
@@ -210,7 +210,7 @@ var sortableDecorator = (function (global, factory) {
         // add source back to array in new location
         ractive.splice(targetArray, array[array.length - 1], 0, source);
 
-        if (eventNameToFire != null) {
+        if (eventNameToFire != null) { // jshint ignore:line
             ractive.fire(eventNameToFire, context, array);
         }
     };
